@@ -4,4 +4,4 @@ target
 .project
 *.class
 *.pyc
-
+src/web/app/src/main/webapp/META-INF/
