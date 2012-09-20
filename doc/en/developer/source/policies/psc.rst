@@ -134,16 +134,16 @@ The PSC is responsible for defining project policies and practiced. Examples inc
 Current PSC
 -----------
 
- * Ben Caradoc-Davies
  * Alessio Fabiani
  * Andrea Aime
+ * Ben Caradoc-Davies
  * Chris Holmes (Chair)
  * Christian Mueller
  * Gabriel Roldan
- * Justin Deoliveira
  * Jody Garnett
- * Mark Leslie
- * Rob Atkinson
+ * Jukka Rahkonen
+ * Justin Deoliveira
+ * Phil Scadden
  * Simone Giannecchini
 
 PSC Voting procedure

@@ -45,6 +45,8 @@ import org.geoserver.wcs.kvp.GridCS;
 import org.geoserver.wcs.kvp.GridType;
 import org.geoserver.wcs.response.DescribeCoverageTransformer;
 import org.geoserver.wcs.response.WCSCapsTransformer;
+import org.geoserver.wcs.responses.CoverageResponseDelegate;
+import org.geoserver.wcs.responses.CoverageResponseDelegateFinder;
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridCoverage2D;
 import org.geotools.coverage.grid.GridGeometry2D;
@@ -75,8 +77,6 @@ import org.opengis.referencing.operation.MathTransform;
 import org.vfny.geoserver.util.WCSUtils;
 import org.vfny.geoserver.wcs.WcsException;
 import org.vfny.geoserver.wcs.WcsException.WcsExceptionCode;
-import org.vfny.geoserver.wcs.responses.CoverageResponseDelegate;
-import org.vfny.geoserver.wcs.responses.CoverageResponseDelegateFactory;
 
 public class DefaultWebCoverageService111 implements WebCoverageService111 {
     Logger LOGGER = Logging.getLogger(DefaultWebCoverageService111.class);
@@ -85,9 +85,12 @@ public class DefaultWebCoverageService111 implements WebCoverageService111 {
 
 	private GeoServer geoServer;
 
-    public DefaultWebCoverageService111(GeoServer geoServer) {
+    private CoverageResponseDelegateFinder responseFactory;
+
+    public DefaultWebCoverageService111(GeoServer geoServer, CoverageResponseDelegateFinder responseFactory) {
         this.geoServer = geoServer;
         this.catalog = geoServer.getCatalog();
+        this.responseFactory = responseFactory;
     }
     
     public WCSInfo getServiceInfo() {
@@ -120,7 +123,7 @@ public class DefaultWebCoverageService111 implements WebCoverageService111 {
         final String version = request.getVersion();
         if ("1.1.0".equals(version) || "1.1.1".equals(version)) {
             WCSInfo wcs = getServiceInfo();
-            DescribeCoverageTransformer describeTransformer = new DescribeCoverageTransformer(wcs, catalog);
+            DescribeCoverageTransformer describeTransformer = new DescribeCoverageTransformer(wcs, catalog, responseFactory);
             describeTransformer.setEncoding(Charset.forName(wcs.getGeoServer().getSettings().getCharset()));
             return describeTransformer;
         }
@@ -159,9 +162,8 @@ public class DefaultWebCoverageService111 implements WebCoverageService111 {
             final GeneralEnvelope originalEnvelope = reader.getOriginalEnvelope();
             final BoundingBoxType bbox = request.getDomainSubset().getBoundingBox();
             final CoordinateReferenceSystem nativeCRS = originalEnvelope.getCoordinateReferenceSystem();
-            final GeneralEnvelope requestedEnvelopeInSourceCRS;
+            final GeneralEnvelope requestedEnvelopeInNativeCRS;
             final GeneralEnvelope requestedEnvelope;
-            MathTransform bboxToNativeTx=null;
             if (bbox != null) {
                 // first off, parse the envelope corners
                 double[] lowerCorner = new double[bbox.getLowerCorner().size()];
@@ -175,33 +177,33 @@ public class DefaultWebCoverageService111 implements WebCoverageService111 {
                 // if no crs has beens specified, the native one is assumed
                 if (bbox.getCrs() == null) {
                     requestedEnvelope.setCoordinateReferenceSystem(nativeCRS);
-                    requestedEnvelopeInSourceCRS = requestedEnvelope;
+                    requestedEnvelopeInNativeCRS = requestedEnvelope;
                 } else {
                     // otherwise we need to transform
                     final CoordinateReferenceSystem bboxCRS = CRS.decode(bbox.getCrs());
                     requestedEnvelope.setCoordinateReferenceSystem(bboxCRS);
-                    bboxToNativeTx = CRS.findMathTransform(bboxCRS, nativeCRS,true);
-                    if(!bboxToNativeTx.isIdentity()){
-	                    requestedEnvelopeInSourceCRS = CRS.transform(bboxToNativeTx,requestedEnvelope);
-	                    requestedEnvelopeInSourceCRS.setCoordinateReferenceSystem(nativeCRS);
+                    if(!CRS.equalsIgnoreMetadata(bboxCRS, nativeCRS)) {
+                        CoordinateOperationFactory of = CRS.getCoordinateOperationFactory(true);
+                        CoordinateOperation co = of.createOperation(bboxCRS, nativeCRS);
+                        requestedEnvelopeInNativeCRS = CRS.transform(co, requestedEnvelope);
+                    } else { 
+                    	requestedEnvelopeInNativeCRS= new GeneralEnvelope(requestedEnvelope);
                     }
-                    else
-                    	requestedEnvelopeInSourceCRS= new GeneralEnvelope(requestedEnvelope);
                 }
             } else {
-                requestedEnvelopeInSourceCRS = reader.getOriginalEnvelope();
-                requestedEnvelope = requestedEnvelopeInSourceCRS;
+                requestedEnvelopeInNativeCRS = reader.getOriginalEnvelope();
+                requestedEnvelope = requestedEnvelopeInNativeCRS;
             }
             
             final GridCrsType gridCRS = request.getOutput().getGridCRS();
 
-            // Compute the target crs, the crs that the final coverage will be
-            // served into
+            // Compute the crs that the final coverage will be served into
             final CoordinateReferenceSystem targetCRS;
-            if (gridCRS == null)
+            if (gridCRS == null) {
                 targetCRS = reader.getOriginalEnvelope().getCoordinateReferenceSystem();
-            else
+            } else {
                 targetCRS = CRS.decode(gridCRS.getGridBaseCRS());
+            }
 
             //
             // Raster destination size
@@ -210,7 +212,9 @@ public class DefaultWebCoverageService111 implements WebCoverageService111 {
             double[] elevations = null;
             
             // grab the grid to world transformation
-            MathTransform gridToCRS = reader.getOriginalGridToWorld(PixelInCell.CELL_CORNER);
+            MathTransform gridToCRS = reader.getOriginalGridToWorld(PixelInCell.CELL_CENTER);
+            double pixelSizeX;
+            double pixelSizeY;
             if (gridCRS != null) {
                 Double[] origin = (Double[]) gridCRS.getGridOrigin();
                 Double[] offsets = (Double[]) gridCRS.getGridOffsets();
@@ -289,7 +293,13 @@ public class DefaultWebCoverageService111 implements WebCoverageService111 {
                         }
                     }
                 }
+                pixelSizeX = Math.abs(tx.getScaleX());
+                pixelSizeY = Math.abs(tx.getScaleY());
                 gridToCRS = new AffineTransform2D(tx);
+            } else {
+                AffineTransform2D at = (AffineTransform2D) gridToCRS;
+                pixelSizeX = Math.abs(at.getScaleX());
+                pixelSizeY = Math.abs(at.getScaleY());
             }
             
             //
@@ -319,16 +329,11 @@ public class DefaultWebCoverageService111 implements WebCoverageService111 {
 
             // now we have enough info to read the coverage, grab the parameters
             // and add the grid geometry info
-            final GeneralEnvelope intersectionEnvelopeInSourceCRS = new GeneralEnvelope(requestedEnvelopeInSourceCRS);
+            final GeneralEnvelope intersectionEnvelopeInSourceCRS = new GeneralEnvelope(requestedEnvelopeInNativeCRS);
             intersectionEnvelopeInSourceCRS.intersect(originalEnvelope);
-            final GeneralEnvelope intersectionEnvelope= 
-            	bboxToNativeTx.isIdentity()?
-            			new GeneralEnvelope(intersectionEnvelopeInSourceCRS):
-            			CRS.transform(bboxToNativeTx.inverse(), intersectionEnvelopeInSourceCRS);
-            intersectionEnvelope.setCoordinateReferenceSystem(targetCRS);
             
             
-            final GridGeometry2D requestedGridGeometry = new GridGeometry2D(PixelInCell.CELL_CORNER, gridToCRS, intersectionEnvelopeInSourceCRS, null);
+            final GridGeometry2D requestedGridGeometry = new GridGeometry2D(PixelInCell.CELL_CENTER, gridToCRS, intersectionEnvelopeInSourceCRS, null);
 
             final ParameterValueGroup readParametersDescriptor = reader.getFormat().getReadParameters();
             GeneralParameterValue[] readParameters = CoverageUtils.getParameters(readParametersDescriptor, meta.getParameters());
@@ -416,6 +421,11 @@ public class DefaultWebCoverageService111 implements WebCoverageService111 {
             
             // now that we have read the coverage double check the input size
             WCSUtils.checkInputLimits(wcs, coverage);
+            
+            // some raster sources do not really read less data (arcgrid for example), we may need to crop
+            if(!intersectionEnvelopeInSourceCRS.contains(coverage.getEnvelope2D(), true)) {
+                coverage = WCSUtils.crop(coverage, intersectionEnvelopeInSourceCRS);
+            }
 
             /**
              * Band Select (works on just one field)
@@ -487,18 +497,38 @@ public class DefaultWebCoverageService111 implements WebCoverageService111 {
              * Reproject
              */
             // adjust the grid geometry to use the final bbox and crs
-            final GridGeometry2D destinationGridGeometry = new GridGeometry2D(PixelInCell.CELL_CORNER, gridToCRS, intersectionEnvelope, null);
+            final GeneralEnvelope intersectionEnvelope;
+            boolean reprojectionNeeded = !CRS.equalsIgnoreMetadata(nativeCRS, targetCRS);
+            if(reprojectionNeeded) {
+                CoordinateOperationFactory of = CRS.getCoordinateOperationFactory(true);
+                CoordinateOperation co = of.createOperation(nativeCRS, targetCRS);
+                intersectionEnvelope = CRS.transform(co, intersectionEnvelopeInSourceCRS);
+            } else {
+                intersectionEnvelope = intersectionEnvelopeInSourceCRS;
+            }
+            // adjust to have at least one pixel in the output
+            if(intersectionEnvelope.getSpan(0) < Math.abs(pixelSizeX)) {
+                double minX = intersectionEnvelope.getMinimum(0);
+                intersectionEnvelope.setRange(0, minX, minX + pixelSizeX);
+            }
+            if(intersectionEnvelope.getSpan(1) < Math.abs(pixelSizeY)) {
+                double minY = intersectionEnvelope.getMinimum(1);
+                intersectionEnvelope.setRange(1, minY, minY + pixelSizeY);
+            }
+
+            final GridGeometry2D destinationGridGeometry = new GridGeometry2D(PixelInCell.CELL_CENTER, gridToCRS, intersectionEnvelope, null);
             
             // before extracting the output make sure it's not too big
             WCSUtils.checkOutputLimits(wcs, destinationGridGeometry.getGridRange2D(), 
                     bandSelectedCoverage.getRenderedImage().getSampleModel());
             
             // reproject if necessary
-            if(!CRS.equalsIgnoreMetadata(nativeCRS, targetCRS) || !bandSelectedCoverage.getGridGeometry().equals(destinationGridGeometry)) {
+            boolean sameGridGeometry = bandSelectedCoverage.getGridGeometry().equals(destinationGridGeometry);
+            if(reprojectionNeeded || !sameGridGeometry) {
                 final GridCoverage2D reprojectedCoverage = WCSUtils.resample(
                 		bandSelectedCoverage,
                         nativeCRS, targetCRS, destinationGridGeometry,interpolation);
-    
+                
                 return new GridCoverage[] { reprojectedCoverage };
             } else {
                 return new GridCoverage[] { bandSelectedCoverage };
@@ -737,7 +767,7 @@ public class DefaultWebCoverageService111 implements WebCoverageService111 {
             if (sf.equalsIgnoreCase(format)) {
                 return sf;
             } else {
-                CoverageResponseDelegate delegate = CoverageResponseDelegateFactory.encoderFor(sf);
+                CoverageResponseDelegate delegate = responseFactory.encoderFor(sf);
                 if (delegate != null && delegate.canProduce(format))
                     return sf;
             }

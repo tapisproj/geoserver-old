@@ -29,6 +29,7 @@ import org.eclipse.emf.ecore.EObject;
 import org.geoserver.catalog.Catalog;
 import org.geoserver.catalog.FeatureTypeInfo;
 import org.geoserver.catalog.NamespaceInfo;
+import org.geoserver.ows.util.KvpUtils;
 import org.geoserver.ows.util.NumericKvpParser;
 import org.geoserver.wfs.GetFeature;
 import org.geoserver.wfs.StoredQuery;
@@ -39,6 +40,7 @@ import org.geoserver.wfs.request.GetFeatureRequest;
 import org.geoserver.wfs.request.Query;
 import org.geoserver.wfs.request.GetFeatureRequest.WFS20;
 import org.geotools.geometry.jts.ReferencedEnvelope;
+import org.geotools.geometry.jts.ReferencedEnvelope3D;
 import org.geotools.gml2.bindings.GML2EncodingUtils;
 import org.geotools.xml.EMFUtils;
 import org.opengis.filter.Filter;
@@ -50,7 +52,11 @@ import org.xml.sax.helpers.NamespaceSupport;
 
 import com.vividsolutions.jts.geom.Envelope;
 
-
+/**
+ * 
+ * @author Niels Charlier : added 3D BBOX support
+ *
+ */
 public class GetFeatureKvpRequestReader extends WFSKvpRequestReader {
     /**
      * Catalog used in qname parsing
@@ -257,7 +263,16 @@ public class GetFeatureKvpRequestReader extends WFSKvpRequestReader {
 
         //propertyName
         if (kvp.containsKey("propertyName")) {
-            querySet(eObject, "propertyName", (List) kvp.get("propertyName"));
+            List<String> propertyNames = new ArrayList<String>();
+            if( kvp.get("propertyName") != null && kvp.get("propertyName") instanceof List ) 
+            {
+                propertyNames = (List) kvp.get("propertyName");
+            }
+            else if( kvp.get("propertyName") != null && kvp.get("propertyName") instanceof String ) 
+            {
+                propertyNames.addAll(KvpUtils.readFlat((String) kvp.get("propertyName")));
+            } 
+            querySet(eObject, "propertyName", propertyNames);
         }
 
         //sortBy
@@ -376,23 +391,29 @@ public class GetFeatureKvpRequestReader extends WFSKvpRequestReader {
     BBOX bboxFilter(QName typeName, Envelope bbox) throws Exception {
         FeatureTypeInfo featureTypeInfo = 
             catalog.getFeatureTypeByName(typeName.getNamespaceURI(), typeName.getLocalPart());
-
+        
         //JD: should this be applied to all geometries?
         //String name = featureType.getDefaultGeometry().getLocalName();
         //JD: changing to "" so it is
         String name = "";
         
+
+        if ( bbox instanceof ReferencedEnvelope3D ) {
+        	return filterFactory.bbox(name, (ReferencedEnvelope3D) bbox);        
+        }         
+    
         //get the epsg code
         String epsgCode = null;
+        
         if ( bbox instanceof ReferencedEnvelope ) {
             CoordinateReferenceSystem crs = ((ReferencedEnvelope)bbox).getCoordinateReferenceSystem();
             if ( crs != null ) {
                 epsgCode = GML2EncodingUtils.crs(crs);
             }
         }
+            
+        return filterFactory.bbox(name, bbox.getMinX(), bbox.getMinY(), bbox.getMaxX(), bbox.getMaxY(), epsgCode);
         
-        return filterFactory.bbox(name, bbox.getMinX(), bbox.getMinY(), bbox.getMaxX(),
-            bbox.getMaxY(), epsgCode);
     }
 
     protected void querySet(EObject request, String property, List values)

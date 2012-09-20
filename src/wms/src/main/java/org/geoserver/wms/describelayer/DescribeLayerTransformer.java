@@ -18,7 +18,6 @@ import javax.xml.transform.TransformerException;
 import org.geoserver.ows.URLMangler.URLType;
 import org.geoserver.wms.DescribeLayerRequest;
 import org.geoserver.wms.MapLayerInfo;
-import org.geotools.util.Version;
 import org.geotools.xml.transform.TransformerBase;
 import org.geotools.xml.transform.Translator;
 import org.xml.sax.ContentHandler;
@@ -173,7 +172,7 @@ public class DescribeLayerTransformer extends TransformerBase {
                     layerAtts.addAttribute("", "owsType", "owsType", "", owsType);
                 }
 
-                layerAtts.setAttribute(0, "", "name", "name", "", layer.getName());
+                layerAtts.setAttribute(0, "", "name", "name", "", layer.getLayerInfo().prefixedName());
                 start("LayerDescription", layerAtts);
 
                 queryAtts.setAttribute(0, "", "typeName", "typeName", "", layer.getName());

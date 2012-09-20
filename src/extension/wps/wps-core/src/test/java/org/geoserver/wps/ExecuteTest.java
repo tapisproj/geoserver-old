@@ -1,8 +1,10 @@
 package org.geoserver.wps;
 
 import static org.custommonkey.xmlunit.XMLAssert.*;
+import static org.geoserver.data.test.MockData.*;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -13,11 +15,16 @@ import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import javax.xml.namespace.QName;
+
 import net.opengis.ows11.BoundingBoxType;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.custommonkey.xmlunit.XMLUnit;
 import org.custommonkey.xmlunit.XpathEngine;
 import org.custommonkey.xmlunit.exceptions.XpathException;
+import org.geoserver.data.test.MockData;
 import org.geoserver.test.RemoteOWSTestSupport;
 import org.geotools.data.collection.ListFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
@@ -41,6 +48,15 @@ import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.io.WKTReader;
 
 public class ExecuteTest extends WPSTestSupport {
+
+    @Override
+    protected void populateDataDirectory(MockData dataDirectory)
+            throws Exception {
+        super.populateDataDirectory(dataDirectory);
+        String pgf  = PRIMITIVEGEOFEATURE.getLocalPart();
+        dataDirectory.addPropertiesType(new QName("http://foo.org", pgf, "foo" ), 
+            MockData.class.getResource(pgf + ".properties"), null);
+    }
 
     @Override
     protected void oneTimeSetUp() throws Exception {
@@ -204,7 +220,7 @@ public class ExecuteTest extends WPSTestSupport {
               "<ows:Identifier>gs:BufferFeatureCollection</ows:Identifier>" + 
                "<wps:DataInputs>" + 
                   "<wps:Input>" + 
-                      "<ows:Identifier>feature collection</ows:Identifier>" + 
+                      "<ows:Identifier>features</ows:Identifier>" + 
                       "<wps:Data>" +
                         "<wps:ComplexData>" + 
                              readFileIntoString("states-FeatureCollection.xml") + 
@@ -212,13 +228,13 @@ public class ExecuteTest extends WPSTestSupport {
                       "</wps:Data>" +     
                   "</wps:Input>" + 
                   "<wps:Input>" + 
-                     "<ows:Identifier>width of the buffer</ows:Identifier>" + 
+                     "<ows:Identifier>distance</ows:Identifier>" + 
                      "<wps:Data>" + 
                        "<wps:LiteralData>10</wps:LiteralData>" + 
                      "</wps:Data>" + 
                   "</wps:Input>" + 
                   "<wps:Input>" + 
-                    "<ows:Identifier>name of the layer attribute containing the width of the buffer</ows:Identifier>" + 
+                    "<ows:Identifier>attributeName</ows:Identifier>" + 
                     "<wps:Data>" + 
                       "<wps:LiteralData></wps:LiteralData>" + 
                     "</wps:Data>" + 
@@ -250,7 +266,7 @@ public class ExecuteTest extends WPSTestSupport {
               "<ows:Identifier>gs:BufferFeatureCollection</ows:Identifier>" + 
                "<wps:DataInputs>" + 
                   "<wps:Input>" + 
-                      "<ows:Identifier>feature collection</ows:Identifier>" + 
+                      "<ows:Identifier>features</ows:Identifier>" + 
                       "<wps:Data>" +
                         "<wps:ComplexData mimeType=\"text/xml; subtype=wfs-collection/1.0\">" + 
                              readFileIntoString("restricted-FeatureCollection.xml") + 
@@ -258,7 +274,7 @@ public class ExecuteTest extends WPSTestSupport {
                       "</wps:Data>" +     
                   "</wps:Input>" + 
                   "<wps:Input>" + 
-                     "<ows:Identifier>width of the buffer</ows:Identifier>" + 
+                     "<ows:Identifier>distance</ows:Identifier>" + 
                      "<wps:Data>" + 
                        "<wps:LiteralData>1000</wps:LiteralData>" + 
                      "</wps:Data>" + 
@@ -287,7 +303,7 @@ public class ExecuteTest extends WPSTestSupport {
     
     public void testFeatureCollectionInlineKVP() throws Exception { 
         String request = "wps?service=WPS&version=1.0.0&request=Execute&Identifier=gs:BufferFeatureCollection" +
-            "&DataInputs=" + urlEncode("feature collection=" + readFileIntoString("states-FeatureCollection.xml") + "@mimetype=application/wfs-collection-1.1;width of the buffer=10") +
+            "&DataInputs=" + urlEncode("features=" + readFileIntoString("states-FeatureCollection.xml") + "@mimetype=application/wfs-collection-1.1;distance=10") +
             "&ResponseDocument=" + urlEncode("result");
         
         Document d = getAsDOM(request);
@@ -307,7 +323,7 @@ public class ExecuteTest extends WPSTestSupport {
               "<ows:Identifier>gs:BufferFeatureCollection</ows:Identifier>" + 
                "<wps:DataInputs>" + 
                   "<wps:Input>" + 
-                      "<ows:Identifier>feature collection</ows:Identifier>" + 
+                      "<ows:Identifier>features</ows:Identifier>" + 
                       "<wps:Data>" +
                         "<wps:ComplexData mimeType=\"text/xml; subtype=wfs-collection/1.0\">" + 
                              readFileIntoString("restricted-FeatureCollection.xml") + 
@@ -315,7 +331,7 @@ public class ExecuteTest extends WPSTestSupport {
                       "</wps:Data>" +     
                   "</wps:Input>" + 
                   "<wps:Input>" + 
-                     "<ows:Identifier>width of the buffer</ows:Identifier>" + 
+                     "<ows:Identifier>distance</ows:Identifier>" + 
                      "<wps:Data>" + 
                        "<wps:LiteralData>1000</wps:LiteralData>" + 
                      "</wps:Data>" + 
@@ -346,8 +362,8 @@ public class ExecuteTest extends WPSTestSupport {
     
     public void testReferenceOutputKVP() throws Exception { 
         String request = "wps?service=WPS&version=1.0.0&request=Execute&Identifier=gs:BufferFeatureCollection" +
-            "&DataInputs=" + urlEncode("feature collection=" + readFileIntoString("states-FeatureCollection.xml") + 
-            "@mimetype=application/wfs-collection-1.1;width of the buffer=10") +
+            "&DataInputs=" + urlEncode("features=" + readFileIntoString("states-FeatureCollection.xml") + 
+            "@mimetype=application/wfs-collection-1.1;distance=10") +
             "&ResponseDocument=" + urlEncode("result=@asReference=true");
         
         Document d = getAsDOM(request);
@@ -374,12 +390,12 @@ public class ExecuteTest extends WPSTestSupport {
               "<ows:Identifier>gs:BufferFeatureCollection</ows:Identifier>" + 
                "<wps:DataInputs>" + 
                   "<wps:Input>" + 
-                      "<ows:Identifier>feature collection</ows:Identifier>" + 
+                      "<ows:Identifier>features</ows:Identifier>" + 
                       "  <wps:Reference mimeType=\"text/xml; subtype=wfs-collection/1.1\" " +
                       "xlink:href=\"" + collectionURL.toExternalForm() + "\"/>\n" + 
                   "</wps:Input>" + 
                   "<wps:Input>" + 
-                     "<ows:Identifier>width of the buffer</ows:Identifier>" + 
+                     "<ows:Identifier>distance</ows:Identifier>" + 
                      "<wps:Data>" + 
                        "<wps:LiteralData>10</wps:LiteralData>" + 
                      "</wps:Data>" + 
@@ -408,8 +424,8 @@ public class ExecuteTest extends WPSTestSupport {
     public void testFeatureCollectionFileReferenceKVP() throws Exception { 
         URL collectionURL = getClass().getResource("states-FeatureCollection.xml");
         String request = "wps?service=WPS&version=1.0.0&request=Execute&Identifier=gs:BufferFeatureCollection" +
-            "&DataInputs=" + urlEncode("feature collection=@mimetype=application/wfs-collection-1.1@xlink:href=" 
-                    + collectionURL.toExternalForm() + ";width of the buffer=10") + "&ResponseDocument=" + urlEncode("result");
+            "&DataInputs=" + urlEncode("features=@mimetype=application/wfs-collection-1.1@xlink:href=" 
+                    + collectionURL.toExternalForm() + ";distance=10") + "&ResponseDocument=" + urlEncode("result");
         
         Document d = getAsDOM(request);
         // print(d);
@@ -428,7 +444,7 @@ public class ExecuteTest extends WPSTestSupport {
         "<ows:Identifier>gs:BufferFeatureCollection</ows:Identifier>" + 
          "<wps:DataInputs>" + 
             "<wps:Input>" + 
-                "<ows:Identifier>feature collection</ows:Identifier>" + 
+                "<ows:Identifier>features</ows:Identifier>" + 
                 "<wps:Data>" +
                   "<wps:ComplexData mimeType=\"application/json\"><![CDATA[" + 
                        readFileIntoString("states-FeatureCollection.json") + 
@@ -436,7 +452,7 @@ public class ExecuteTest extends WPSTestSupport {
                 "</wps:Data>" +     
             "</wps:Input>" + 
             "<wps:Input>" + 
-               "<ows:Identifier>width of the buffer</ows:Identifier>" + 
+               "<ows:Identifier>distance</ows:Identifier>" + 
                "<wps:Data>" + 
                  "<wps:LiteralData>10</wps:LiteralData>" + 
                "</wps:Data>" + 
@@ -464,7 +480,7 @@ public class ExecuteTest extends WPSTestSupport {
         "<ows:Identifier>gs:BufferFeatureCollection</ows:Identifier>" + 
          "<wps:DataInputs>" + 
          "    <wps:Input>\n" + 
-                "<ows:Identifier>feature collection</ows:Identifier>" + 
+                "<ows:Identifier>features</ows:Identifier>" + 
                 "<wps:Data>" +
                   "<wps:ComplexData>" + 
                       readFileIntoString("states-FeatureCollection.xml") + 
@@ -472,7 +488,7 @@ public class ExecuteTest extends WPSTestSupport {
                 "</wps:Data>" +
             "</wps:Input>" + 
             "<wps:Input>" + 
-               "<ows:Identifier>width of the buffer</ows:Identifier>" + 
+               "<ows:Identifier>distance</ows:Identifier>" + 
                "<wps:Data>" + 
                  "<wps:LiteralData>10</wps:LiteralData>" + 
                "</wps:Data>" + 
@@ -916,7 +932,37 @@ public class ExecuteTest extends WPSTestSupport {
         dom = waitForProcessEnd(statusLocation2, 60);
         assertXpathExists("//wps:ProcessSucceeded", dom);
     }
-    
+
+    public void testInlineGetFeatureNameClash() throws Exception {
+        assertNotNull(getCatalog().getLayerByName("foo:PrimitiveGeoFeature"));
+        assertNotNull(getCatalog().getLayerByName("sf:PrimitiveGeoFeature"));
+
+        String request = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + 
+                "<wps:Execute version=\"1.0.0\" service=\"WPS\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://www.opengis.net/wps/1.0.0\" xmlns:wfs=\"http://www.opengis.net/wfs\" xmlns:wps=\"http://www.opengis.net/wps/1.0.0\" xmlns:ows=\"http://www.opengis.net/ows/1.1\" xmlns:gml=\"http://www.opengis.net/gml\" xmlns:ogc=\"http://www.opengis.net/ogc\" xmlns:wcs=\"http://www.opengis.net/wcs/1.1.1\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" xsi:schemaLocation=\"http://www.opengis.net/wps/1.0.0 http://schemas.opengis.net/wps/1.0.0/wpsAll.xsd\">\n" + 
+                "  <ows:Identifier>gs:Bounds</ows:Identifier>\n" + 
+                "  <wps:DataInputs>\n" + 
+                "    <wps:Input>\n" + 
+                "      <ows:Identifier>features</ows:Identifier>\n" + 
+                "      <wps:Reference mimeType=\"text/xml; subtype=wfs-collection/1.0\" xlink:href=\"http://geoserver/wfs\" method=\"POST\">\n" + 
+                "        <wps:Body>\n" + 
+                "          <wfs:GetFeature service=\"WFS\" version=\"1.0.0\" xmlns:foo='http://foo.org'>\n" + 
+                "            <wfs:Query typeName=\"foo:PrimitiveGeoFeature\"/>\n" + 
+                "          </wfs:GetFeature>\n" + 
+                "        </wps:Body>\n" + 
+                "      </wps:Reference>\n" + 
+                "    </wps:Input>\n" + 
+                "  </wps:DataInputs>\n" + 
+                "  <wps:ResponseForm>\n" + 
+                "    <wps:RawDataOutput>\n" + 
+                "      <ows:Identifier>bounds</ows:Identifier>\n" + 
+                "    </wps:RawDataOutput>\n" + 
+                "  </wps:ResponseForm>\n" + 
+                "</wps:Execute>";
+        
+        Document dom = postAsDOM(root(), request);
+        assertEquals("ows:BoundingBox", dom.getDocumentElement().getNodeName());
+    }
+
     private void assertProgress(String statusLocation, String progress) throws Exception {
         Document dom = getAsDOM(statusLocation);
         // print(dom);
