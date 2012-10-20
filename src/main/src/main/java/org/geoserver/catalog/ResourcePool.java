@@ -654,7 +654,9 @@ public class ResourcePool {
                             ft = jstore.getSchema(vtName);
                         } else {
                             vtName = vt.getName();
-                            jstore.addVirtualTable(vt);
+                            if(!jstore.getVirtualTables().containsValue(vt)) {
+                                jstore.addVirtualTable(vt);
+                            }
                             ft = jstore.getSchema(vt.getName());
                         }
                     } else {
@@ -857,10 +859,10 @@ public class ResourcePool {
         if(dataStore instanceof JDBCDataStore && info.getMetadata() != null &&
                 info.getMetadata().containsKey(FeatureTypeInfo.JDBC_VIRTUAL_TABLE)) {
             VirtualTable vt = (VirtualTable) info.getMetadata().get(FeatureTypeInfo.JDBC_VIRTUAL_TABLE);
-			JDBCDataStore jstore = (JDBCDataStore) dataStore;
-			if (!jstore.getVirtualTables().containsKey(vt.getName())) {
-				jstore.addVirtualTable(vt);
-			}
+            JDBCDataStore jstore = (JDBCDataStore) dataStore;
+            if(!jstore.getVirtualTables().containsValue(vt)) {
+                 jstore.addVirtualTable(vt);
+            }
         }
                 
         //
