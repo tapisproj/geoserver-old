@@ -4,10 +4,7 @@
  */
 package org.geoserver.wfs.xml;
 
-import static org.geoserver.ows.util.ResponseUtils.buildSchemaURL;
-import static org.geoserver.ows.util.ResponseUtils.buildURL;
-import static org.geoserver.ows.util.ResponseUtils.params;
-import static org.geoserver.ows.util.ResponseUtils.urlEncode;
+import static org.geoserver.ows.util.ResponseUtils.*;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -38,13 +35,15 @@ import org.geoserver.wfs.WFSInfo;
 import org.geoserver.wfs.request.FeatureCollectionResponse;
 import org.geoserver.wfs.request.GetFeatureRequest;
 import org.geoserver.wfs.request.Query;
+import org.geotools.GML.Version;
+import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.feature.FeatureCollection;
 import org.geotools.gml.producer.FeatureTransformer;
 import org.geotools.gml.producer.FeatureTransformer.FeatureTypeNamespaces;
 import org.geotools.gml2.bindings.GML2EncodingUtils;
 import org.geotools.referencing.CRS;
 import org.geotools.wfs.WFS;
-import org.opengis.feature.type.FeatureType;
+import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 
@@ -142,8 +141,8 @@ public class GML2OutputFormat extends WFSGetFeatureOutputFormat {
         int numDecimals = -1;
         for (int i = 0; i < results.getFeature().size(); i++) {
             //FeatureResults features = (FeatureResults) f.next();
-        	FeatureCollection features = (FeatureCollection) results.getFeature().get(i);
-            FeatureType featureType = features.getSchema();
+            FeatureCollection features = (FeatureCollection) results.getFeature().get(i);
+            SimpleFeatureType featureType = (SimpleFeatureType) features.getSchema();
 
             ResourceInfo meta = catalog.getResourceByName(featureType.getName(), ResourceInfo.class);
 
