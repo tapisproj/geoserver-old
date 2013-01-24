@@ -250,23 +250,37 @@
           -->
         </configuration>
       </plugin>
-      <plugin>
-        <inherited>true</inherited>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-war-plugin</artifactId>
-        <configuration>
-          <warName>geoserver</warName>
-          <webappDirectory>${project.build.directory}/geoserver</webappDirectory>
-        </configuration>
-        <executions>
-          <execution>
-            <phase>install</phase>
-            <goals>
-              <goal>war</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
+	  <plugin>
+		<inherited>true</inherited>
+		<groupId>org.apache.maven.plugins</groupId>
+		<artifactId>maven-war-plugin</artifactId>
+		<configuration>
+			<warName>geoserver</warName>
+			<webappDirectory>${project.build.directory}/geoserver</webappDirectory>
+			<archive>
+				<manifest>
+					<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+					<addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+				</manifest>
+				<manifestEntries>
+					<GeoServerModule>core</GeoServerModule>
+					<Application-Name>${project.build.finalname}</Application-Name>
+					<Project-Version>${project.version}</Project-Version>
+					<Iteration-Name>${iteration}</Iteration-Name>
+					<Build-Timestamp>${maven.build.timestamp}</Build-Timestamp>
+					<Git-Revision>${build.commit.id}</Git-Revision>
+				</manifestEntries>
+			</archive>
+		</configuration>
+		<executions>
+			<execution>
+				<phase>install</phase>
+				<goals>
+					<goal>war</goal>
+				</goals>
+			</execution>
+		</executions>
+	</plugin>
     </plugins>
   </build>
   
@@ -582,11 +596,27 @@
       </dependencies>
     </profile>
     <profile>
-      <id>monitoring</id>
+      <id>monitor</id>
+      <activation>
+        <property><name>monitoring</name></property>
+      </activation>
       <dependencies>
         <dependency>
-          <groupId>org.geoserver.community</groupId>
-          <artifactId>monitoring</artifactId>
+          <groupId>org.geoserver.extension</groupId>
+          <artifactId>monitor-core</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>monitor-hibernate</id>
+      <activation>
+        <property><name>monitoring</name></property>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>org.geoserver.extension</groupId>
+          <artifactId>monitor-hibernate</artifactId>
           <version>${project.version}</version>
         </dependency>
       </dependencies>

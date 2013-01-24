@@ -21,6 +21,40 @@
     </dependency>
   </dependencies>
 
+
+  <build>
+   <plugins>
+	<plugin>
+		<artifactId>maven-jar-plugin</artifactId>
+		<executions>
+			<execution>
+				<phase>package</phase>
+				<goals>
+					<goal>test-jar</goal>
+				</goals>
+			</execution>
+		</executions>
+		<configuration>
+			<archive>
+				<manifest>
+					<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+					<addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+				</manifest>
+				<manifestEntries>
+					<GeoServerModule>extension</GeoServerModule>
+					<Application-Name>${project.build.finalname}</Application-Name>
+					<Project-Version>${project.version}</Project-Version>
+					<Iteration-Name>${iteration}</Iteration-Name>
+					<Build-Timestamp>${maven.build.timestamp}</Build-Timestamp>
+					<Git-Revision>${build.commit.id}</Git-Revision>
+				</manifestEntries>
+			</archive>
+		</configuration>
+	</plugin>
+   </plugins>
+  </build>
+
+
   <profiles>
 
     <!-- profiles for individual modules -->
@@ -173,6 +207,18 @@
     </profile>
 
     <profile>
+      <id>monitor</id>
+      <activation>
+        <property>
+          <name>monitoring</name>
+        </property>
+      </activation>
+      <modules>
+        <module>monitor</module>
+      </modules>
+    </profile>
+
+    <profile>
       <id>security</id>
       <modules>
         <module>security</module>
@@ -204,6 +250,7 @@
         <module>wps</module>
         <module>querylayer</module>
         <module>teradata</module>
+        <module>monitor</module>
         <module>security</module>
       </modules>
     </profile>
@@ -233,6 +280,7 @@
         <module>wps</module>
         <module>querylayer</module>
         <module>teradata</module>
+        <module>monitor</module>
         <module>security</module>
       </modules>
     </profile>
