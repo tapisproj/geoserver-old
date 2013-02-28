@@ -286,6 +286,15 @@ public class GetFeature {
         if(request.getMetadata() != null) {
             viewParams = (List<Map<String, String>>) request.getMetadata().get(SQL_VIEW_PARAMS);
         }
+        
+        // try to get viewParams from kvp
+        if(viewParams==null){
+        	Request req = Dispatcher.REQUEST.get();
+            Map kvp = new KvpMap(req.getKvp()); 
+            if(kvp!=null && kvp.containsKey("viewParams")){
+            	 viewParams = (List<Map<String, String>>) kvp.get("viewParams");
+            }
+        }
 
         int count = 0; //should probably be long
 
