@@ -51,7 +51,11 @@
    <url>http://repo.opengeo.org/</url>
    <snapshots>
      <enabled>true</enabled>
+     <updatePolicy>never</updatePolicy>
    </snapshots>
+    <releases>
+       <updatePolicy>never</updatePolicy>
+      </releases>
   </repository>
   
   <repository>
@@ -60,7 +64,11 @@
     <url>http://download.osgeo.org/webdav/geotools/</url>
     <snapshots>
       <enabled>true</enabled>
+       <updatePolicy>never</updatePolicy>
     </snapshots>
+      <releases>
+       <updatePolicy>never</updatePolicy>
+      </releases>
   </repository>
 
   <repository>
@@ -69,7 +77,11 @@
     <url>http://maven.restlet.org</url>
     <snapshots>
       <enabled>false</enabled>
+       <updatePolicy>never</updatePolicy>
     </snapshots>
+      <releases>
+       <updatePolicy>never</updatePolicy>
+      </releases>
   </repository>
  </repositories>
 
@@ -80,9 +92,11 @@
    <url>http://snapshots.repository.codehaus.org/</url>
    <snapshots>
     <enabled>true</enabled>
+       <updatePolicy>never</updatePolicy>
    </snapshots>
    <releases>
     <enabled>false</enabled>
+       <updatePolicy>never</updatePolicy>
    </releases>
   </pluginRepository>
  </pluginRepositories>
