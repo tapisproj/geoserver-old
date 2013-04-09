@@ -49,7 +49,7 @@
 		</dependency>
     
     <!-- test dependencies -->
-    <dependency>
+    <!-- <dependency>
       <groupId>org.geoserver.web</groupId>
       <artifactId>web-core</artifactId>
       <version>${project.version}</version>
@@ -63,7 +63,7 @@
       <version>${project.version}</version>
       <classifier>tests</classifier>
       <scope>test</scope>
-    </dependency>
+    </dependency> -->
     
     <dependency>
       <groupId>org.geotools</groupId>

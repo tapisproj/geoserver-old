@@ -31,7 +31,7 @@
       <groupId>commons-collections</groupId>
       <artifactId>commons-collections</artifactId>
     </dependency>
-    <dependency>
+    <!-- <dependency>
       <groupId>org.geoserver</groupId>
       <artifactId>main</artifactId>
       <version>${project.version}</version>
@@ -44,7 +44,7 @@
       <version>${project.version}</version>
       <classifier>tests</classifier>
       <scope>test</scope>
-    </dependency>
+    </dependency> -->
     <dependency>
       <groupId>xmlunit</groupId>
       <artifactId>xmlunit</artifactId>

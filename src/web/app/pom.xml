@@ -147,13 +147,13 @@
       <artifactId>jetty-plus</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
+    <!-- <dependency>
       <groupId>org.geoserver</groupId>
       <artifactId>main</artifactId>
       <version>${project.version}</version>
       <classifier>tests</classifier>
       <scope>test</scope>
-    </dependency>
+    </dependency> -->
     <dependency>
       <groupId>com.mockrunner</groupId>
       <artifactId>mockrunner</artifactId>

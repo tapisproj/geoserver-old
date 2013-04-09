@@ -76,12 +76,12 @@
     </dependency>
 
     <!-- test dependencies -->
-    <dependency>
+    <!--<dependency>
       <groupId>org.geoserver</groupId>
       <artifactId>main</artifactId>
       <classifier>tests</classifier>
       <scope>test</scope>
-    </dependency>
+    </dependency> -->
     <dependency>
       <groupId>xmlunit</groupId>
       <artifactId>xmlunit</artifactId>

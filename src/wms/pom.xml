@@ -76,8 +76,8 @@
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId> 
-    </dependency>
-	<dependency>
+   </dependency>
+<!-- 	<dependency>
       <groupId>org.geoserver</groupId>
       <artifactId>ows</artifactId>
       <classifier>tests</classifier>
@@ -88,7 +88,7 @@
       <artifactId>main</artifactId>
       <classifier>tests</classifier>
       <scope>test</scope>
-    </dependency>
+    </dependency> -->
     <dependency>
       <groupId>com.mockrunner</groupId>
       <artifactId>mockrunner</artifactId>
