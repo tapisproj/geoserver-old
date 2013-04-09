@@ -153,13 +153,13 @@
           <artifactId>mockrunner</artifactId>
           <scope>test</scope>
         </dependency>
-        <dependency>
+        <!-- <dependency>
            <groupId>org.geoserver</groupId>
            <artifactId>main</artifactId>
            <version>${gs.version}</version>
            <classifier>tests</classifier>
            <scope>test</scope>
-        </dependency>
+        </dependency> -->
     </dependencies>
 
 </project>
