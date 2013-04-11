@@ -1047,17 +1047,30 @@ public class ResourcePool {
         //
         // aliasing and type mapping
         //
-        final String typeName = info.getNativeName();
-        final String alias = info.getName();
-        final SimpleFeatureType nativeFeatureType = dataStore.getSchema( typeName );
-        final SimpleFeatureType renamedFeatureType = (SimpleFeatureType) getFeatureType( info, false );
-        if ( !typeName.equals( alias ) || DataUtilities.compare(nativeFeatureType,renamedFeatureType) != 0 ) {
-            // rename and retype as necessary
-            fs = RetypingFeatureSource.getRetypingSource(dataStore.getFeatureSource(typeName), renamedFeatureType);
-        } else {
-            //normal case
-            fs = dataStore.getFeatureSource(info.getQualifiedName());   
-        }
+		if (dataStore instanceof JDBCDataStore
+				&& info.getMetadata() != null
+				&& info.getMetadata().containsKey(
+						FeatureTypeInfo.JDBC_VIRTUAL_TABLE)) {
+			fs = dataStore.getFeatureSource(info.getQualifiedName());
+		} else {
+			final String typeName = info.getNativeName();
+			final String alias = info.getName();
+			final SimpleFeatureType nativeFeatureType = dataStore
+					.getSchema(typeName);
+			final SimpleFeatureType renamedFeatureType = (SimpleFeatureType) getFeatureType(
+					info, false);
+			if (!typeName.equals(alias)
+					|| DataUtilities.compare(nativeFeatureType,
+							renamedFeatureType) != 0) {
+				// rename and retype as necessary
+				fs = RetypingFeatureSource.getRetypingSource(
+						dataStore.getFeatureSource(typeName),
+						renamedFeatureType);
+			} else {
+				// normal case
+				fs = dataStore.getFeatureSource(info.getQualifiedName());
+			}
+		}
 
         //
         // reprojection
