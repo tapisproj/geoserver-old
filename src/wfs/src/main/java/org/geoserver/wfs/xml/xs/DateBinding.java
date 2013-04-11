@@ -14,17 +14,22 @@ import org.geotools.xs.bindings.XSDateBinding;
 /**
  * Override of binding for xs:date that forces date to be encoded in UTC
  * timezone.
- *
+ * 
  * @author Justin Deoliveira, The Open Planning Project
- *
+ * 
  */
 public class DateBinding extends XSDateBinding {
-    public String encode(Object object, String value) throws Exception {
-        Date date = (Date) object;
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(date);
-        calendar.setTimeZone(TimeZone.getTimeZone("UTC"));
+	public String encode(Object object, String value) throws Exception {
+		Date date = (Date) object;
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTime(date);
+		Calendar utcCalendar = Calendar.getInstance();
+		utcCalendar.setTimeZone(TimeZone.getTimeZone("UTC"));
+		utcCalendar.clear();
+		utcCalendar.set(calendar.get(Calendar.YEAR),
+				calendar.get(Calendar.MONTH), calendar.get(Calendar.DATE));
 
-        return DatatypeConverterImpl.getInstance().printDate(calendar);
-    }
+		return DatatypeConverterImpl.getInstance().printDate(utcCalendar);
+
+	}
 }
