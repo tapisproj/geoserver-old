@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -474,18 +475,27 @@ public abstract class FeatureTypeSchemaBuilder {
         //incorporate application schemas into the wfs schema
         Collection<FeatureTypeInfo> featureTypeInfos = catalog.getFeatureTypes();
 
+        TreeSet<String> wfsSchemaNamespaces = new TreeSet<String>(wfsSchema.getQNamePrefixToNamespaceMap().keySet());
+        
         for (Iterator<FeatureTypeInfo> i = featureTypeInfos.iterator(); i.hasNext();) {
             FeatureTypeInfo meta = i.next();
             
             // don't build schemas for disabled feature types
             if(!meta.enabled())
                 continue;
+            
+            String prefix = meta.getNamespace().getPrefix();
+            
+            // don't add already added namespaces and their types
+            //TODO does reconfigure refreshes schema?
+            if(wfsSchemaNamespaces.contains(prefix)){
+            	continue;
+            }
 
             //build the schema for the types in the single namespace (and don't clean them, they are not dynamic)
             XSDSchema schema = buildSchemaInternal(new FeatureTypeInfo[] { meta }, null, false);
 
             //declare the namespace
-            String prefix = meta.getNamespace().getPrefix();
             String namespaceURI = meta.getNamespace().getURI();
             wfsSchema.getQNamePrefixToNamespaceMap().put(prefix, namespaceURI);
 

@@ -38,17 +38,16 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
+import org.eclipse.xsd.XSDSchema;
 import org.geoserver.catalog.Catalog;
 import org.geoserver.catalog.FeatureTypeInfo;
 import org.geoserver.config.GeoServer;
-import org.geoserver.config.GeoServerInfo;
 import org.geoserver.ows.URLMangler.URLType;
 import org.geoserver.platform.Operation;
 import org.geoserver.platform.ServiceException;
 import org.geoserver.wfs.WFSException;
 import org.geoserver.wfs.WFSGetFeatureOutputFormat;
 import org.geoserver.wfs.WFSInfo;
-import org.geoserver.wfs.GMLInfo.SrsNameStyle;
 import org.geoserver.wfs.request.FeatureCollectionResponse;
 import org.geoserver.wfs.request.GetFeatureRequest;
 import org.geoserver.wfs.request.Query;
@@ -257,8 +256,14 @@ public class GML3OutputFormat extends WFSGetFeatureOutputFormat {
     }
     
     protected Encoder createEncoder(Configuration configuration, 
-        Map<String, Set<FeatureTypeInfo>> featureTypes, Object request ) {
-        return new Encoder(configuration, configuration.schema());
+        Map<String, Set<FeatureTypeInfo>> featureTypes, Object request ) throws IOException {
+    	XSDSchema schema = configuration.schema();
+    	//GEOS-4773 workaround 
+    	if(schema!=null){
+    		WFS xsd = (WFS) configuration.getXSD();
+    		schema = xsd.getSchemaBuilder().addApplicationTypes(schema);
+    	}
+        return new Encoder(configuration, schema);
     }
 
     protected void setAdditionalSchemaLocations(Encoder encoder, GetFeatureRequest request, WFSInfo wfs) {
