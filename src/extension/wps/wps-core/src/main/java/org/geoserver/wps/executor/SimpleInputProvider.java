@@ -266,7 +266,7 @@ class SimpleInputProvider implements InputProvider {
 
         // execute the request
         try {
-            if ("http".equalsIgnoreCase(destination.getProtocol())) {
+            if ("http".equalsIgnoreCase(destination.getProtocol()) || "https".equalsIgnoreCase(destination.getProtocol())) {
                 // setup the client
                 HttpClient client = new HttpClient();
                 // setting timeouts (30 seconds, TODO: make this configurable)
@@ -295,7 +295,7 @@ class SimpleInputProvider implements InputProvider {
                     if (body == null) {
                         if (ref.getBodyReference() != null) {
                             URL refDestination = new URL(ref.getBodyReference().getHref());
-                            if ("http".equalsIgnoreCase(refDestination.getProtocol())) {
+                            if ("http".equalsIgnoreCase(refDestination.getProtocol()) || "https".equalsIgnoreCase(destination.getProtocol())) {
                                 // open with commons http client
                                 refMethod = new GetMethod(ref.getBodyReference().getHref());
                                 refMethod.setFollowRedirects(true);
