@@ -92,4 +92,11 @@ final class CapabilityUtil {
 
 	    return scaleDenominator;
 	}
+
+    public static Double computeScaleHint(final Double scaleDenominator) { 
+        final Double sizeStarndardRenderPixel = 0.00028; //(meters) 
+        Double scaleHint = Math.sqrt(Math.pow((scaleDenominator * sizeStarndardRenderPixel), 2) * 2);
+ 
+        return scaleHint;
+    }
 }
