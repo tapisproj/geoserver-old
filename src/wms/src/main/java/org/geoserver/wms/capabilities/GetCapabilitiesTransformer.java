@@ -767,8 +767,8 @@ public class GetCapabilitiesTransformer extends TransformerBase {
 
             Collections.sort(data, new Comparator<LayerInfo>() {
                 public int compare(LayerInfo o1, LayerInfo o2) {
-                    Integer o11 = o1.getType() == Type.RASTER ? 1 : 0;
-                    Integer o22 = o2.getType() == Type.RASTER ? 1 : 0;
+                    Integer o11 = o1.getType() != null && o1.getType() == Type.RASTER ? 1 : 0;
+                    Integer o22 = o2.getType() != null && o2.getType() == Type.RASTER ? 1 : 0;
                     int res1 = o11.compareTo(o22);
                     if(res1 != 0) return res1;
                     return o1.getName().compareTo(o2.getName());
