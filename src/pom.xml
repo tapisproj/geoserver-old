@@ -436,7 +436,7 @@
    <dependency>
     <groupId>org.geotools</groupId>
     <artifactId>gt-process</artifactId>
-    <version>9-SNAPSHOT-patched</version>
+    <version>${gt.version}</version>
    </dependency>
    <dependency>
     <groupId>org.geotools</groupId>
